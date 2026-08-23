@@ -1,49 +1,27 @@
-import mongoose from "mongoose";
-import User from "../models/user.model.js";
-import { createUser } from "../services/user.service.js";
-import { validationResult } from "express-validator";
 import BlacklistToken from "../models/blacklistToken.model.js";
+import Captain from "../models/captain.model.js";
+import { createCaptain } from "../services/captain.service.js";
+import { validationResult } from "express-validator";
 
-const register = async (req, res) => {
+const registerCaptain = async (req, res) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(400).json({ success: false, message: "Validation failed", errors: errors.array() });
         }
-        const { firstName, lastName, email, password } = req.body;
-        if (!firstName || !email || !password) {
-            return res.status(400).json({
-                success: false,
-                message: "All fields are required"
-            });
-        }
+   
+        const { firstName, lastName, email, password, color, plate, capacity, vehicleType } = req.body;
+        const captain = await createCaptain({ firstName, lastName, email, password, color, plate, capacity, vehicleType });
 
-        // const existingUser = await User.findOne({ email });
-        // if (existingUser) {
-        //     return res.status(400).json({
-        //         success: false,
-        //         message: "User already exists"
-        //     });
-        // }
+        const token = await captain.generateToken()
 
-        const user = await createUser({ firstName, lastName, email, password });
-
-        const token = user.generateToken();
-
-        res.status(201).json({
-            success: true,
-            user,
-            token
-        });
+        res.status(201).json({ success: true, captain, token });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
+        res.status(400).json({ success: false, message: error.message });
     }
 };
 
-const login = async (req, res) => {
+const loginCaptain = async (req, res) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -51,28 +29,30 @@ const login = async (req, res) => {
         }
         const { email, password } = req.body;
 
-        const user = await User.findOne({ email }).select("+password");
-        if (!user) {
+        const captain = await Captain.findOne({ email }).select("+password");
+        if (!captain) {
             return res.status(404).json({
                 success: false,
-                message: "User not found"
+                message: "Captain not found"
             });
         }
-        const isMatch = await user.comparePassword(password);
+        const isMatch = await captain.comparePassword(password);
         if (!isMatch) {
             return res.status(401).json({
                 success: false,
                 message: "Invalid credentials"
             });
         }
-        const token = user.generateToken();
+
+        const token = captain.generateToken();
+
         res.status(200).cookie("token", token, {
             httpOnly: true,
             secure: true,
             maxAge: 24 * 60 * 60 * 1000 // 1 day
         }).json({
             success: true,
-            user,
+            captain,
             token
         });
 
@@ -85,12 +65,13 @@ const login = async (req, res) => {
     }
 };
 
-const getUserProfile = async (req, res) => {
+
+const getCaptainProfile = async (req, res) => {
     try {
-        const user = req.user
+        const captain = req.captain
         res.status(200).json({
             success: true,
-            user,
+            captain,
         });
 
     } catch (error) {
@@ -101,7 +82,8 @@ const getUserProfile = async (req, res) => {
     }
 }
 
-const logout = async (req, res) => {
+
+const logoutCaptain = async (req, res) => {
     try {
         const token  = req.cookies.token || req.headers.authorization?.split(" ")[1];
 
@@ -130,4 +112,4 @@ const logout = async (req, res) => {
     }
 };
 
-export { register, login, getUserProfile, logout };
+export { registerCaptain,loginCaptain,getCaptainProfile,logoutCaptain };

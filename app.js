@@ -4,6 +4,7 @@ import express from "express"
 import cors from "cors"
 import  connectDB  from "./config/db.js"
 import UserRouter from "./routes/user.route.js"
+import captainRouter from "./routes/captain.route.js"
 import cookeiParser from "cookie-parser"
 connectDB()
 
@@ -18,5 +19,6 @@ app.get("/",(req,res)=>{
     res.send("ride booking application backend running...")
 })
 app.use("/api/user",UserRouter)
+app.use("/api/captain",captainRouter)
 
 export  {app}
