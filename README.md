@@ -633,3 +633,155 @@ or:
 - The `status` field defaults to `inactive`.
 - Logout blacklists the token until its 24-hour expiration.
 
+---
+
+# Maps API
+
+Maps endpoints are available under the `/api/maps` base path. All maps endpoints require authentication.
+
+## Authentication
+
+Send the JWT in the `Authorization` header:
+
+```http
+Authorization: Bearer <jwt_token>
+```
+
+The token may also be sent in the `token` cookie.
+
+## Get Coordinates
+
+### GET `/api/maps/get-coordinates`
+
+Returns the latitude and longitude for an address using Geoapify geocoding.
+
+### Query Parameters
+
+| Parameter | Type | Required | Validation | Description |
+|-----------|------|----------|------------|-------------|
+| `address` | String | Yes | Minimum 3 characters | Address to geocode |
+
+### Example Request
+
+```http
+GET /api/maps/get-coordinates?address=Connaught%20Place%2C%20New%20Delhi
+Authorization: Bearer <jwt_token>
+```
+
+### Success Response (200 OK)
+
+```json
+{
+  "success": true,
+  "message": "Coordinates fetched successfully",
+  "data": {
+    "ltd": 28.6315,
+    "lng": 77.2167
+  }
+}
+```
+
+## Get Distance and Travel Time
+
+### GET `/api/maps/get-distance-time`
+
+Returns the driving distance and estimated travel time between two addresses.
+
+### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `origin` | String | Yes | Starting address |
+| `destination` | String | Yes | Destination address |
+
+### Example Request
+
+```http
+GET /api/maps/get-distance-time?origin=Connaught%20Place%2C%20New%20Delhi&destination=India%20Gate%2C%20New%20Delhi
+Authorization: Bearer <jwt_token>
+```
+
+### Success Response (200 OK)
+
+```json
+{
+  "distanceTime": {
+    "distance": {
+      "text": "4.2 km",
+      "value": 4200
+    },
+    "duration": {
+      "text": "14 mins",
+      "value": 840
+    },
+    "status": "OK"
+  }
+}
+```
+
+`distance.value` is measured in metres and `duration.value` is measured in seconds.
+
+## Get Address Suggestions
+
+### GET `/api/maps/get-suggestions`
+
+Returns up to five address suggestions for a search input.
+
+### Query Parameters
+
+| Parameter | Type | Required | Validation | Description |
+|-----------|------|----------|------------|-------------|
+| `input` | String | Yes | Minimum 3 characters | Partial address or place name |
+
+### Example Request
+
+```http
+GET /api/maps/get-suggestions?input=Connaught%20Place
+Authorization: Bearer <jwt_token>
+```
+
+### Success Response (200 OK)
+
+```json
+{
+  "suggestion": [
+    "Connaught Place, New Delhi, Delhi, India",
+    "Connaught Circus, New Delhi, Delhi, India"
+  ]
+}
+```
+
+## Common Maps API Errors
+
+### 400 Bad Request
+
+Returned when a required query parameter is missing or does not meet the minimum length.
+
+```json
+{
+  "errors": [
+    {
+      "type": "field",
+      "msg": "Address must be at least 3 characters long",
+      "path": "address",
+      "location": "query"
+    }
+  ]
+}
+```
+
+### 401 Unauthorized
+
+Returned when the JWT is missing, invalid, expired, or blacklisted. The response is handled by the authentication middleware.
+
+```json
+{
+  "success": false,
+  "message": "Unauthorized: No token provided"
+}
+```
+
+### 500 Internal Server Error
+
+Returned when Geoapify cannot provide coordinates, routing information, or suggestions. Configure `GEOAPIFY_API_KEY` in the backend environment before using these endpoints.
+

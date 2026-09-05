@@ -24,7 +24,7 @@ export const signUpValidation = [
 ];
 
 export const loginValidation = [
-     body("email")
+    body("email")
         .notEmpty()
         .withMessage("Email is required")
         .isEmail()

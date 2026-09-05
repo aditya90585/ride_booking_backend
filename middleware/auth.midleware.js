@@ -14,7 +14,6 @@ export const authMiddleware = async (req, res, next) => {
         }
         const isBlacklisted = await BlacklistToken.findOne({ token: token })
 
-        console.log("isBlacklisted", isBlacklisted)
         if (isBlacklisted) {
             return res.status(401).json({
                 success: false,
