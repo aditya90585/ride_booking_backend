@@ -1,6 +1,7 @@
 import axios from "axios";
 // import captainModel from "../models/captain.model.js";
 import dotenv from "dotenv"
+import Captain from "../models/captain.model.js";
 dotenv.config()
 
 const GEOAPIFY_API_KEY = process.env.GEOAPIFY_API_KEY;
@@ -62,7 +63,7 @@ const getDistanceTime = async (origin, destination) => {
             params: {
                 waypoints,
                 mode: "drive",
-                format:"json",
+                format: "json",
                 apiKey: GEOAPIFY_API_KEY
             }
         });
@@ -103,7 +104,7 @@ const getAutoCompleteSuggestions = async (input) => {
         const response = await axios.get(AUTOCOMPLETE_URL, {
             params: {
                 text: input,
-                format:"json",
+                format: "json",
                 apiKey: GEOAPIFY_API_KEY,
                 limit: 5
             }
@@ -125,22 +126,24 @@ const getAutoCompleteSuggestions = async (input) => {
     }
 };
 
-// const getCaptainsInTheRadius = async (ltd, lng, radius) => {
-//     const captains = await captainModel.find({
-//         location: {
-//             $geoWithin: {
-//                 $centerSphere: [[ltd, lng], radius / 6371]
-//             }
-//         }
-//     });
+const getCaptainsInTheRadius = async (ltd, lng, radius) => {
+    console.log(ltd, lng, radius)
+    const captains = await Captain.find({
+        location: {
+            $geoWithin: {
+                $centerSphere: [[lng, ltd], radius / 6371]
+            }
+        }
+    });
+    console.log(captains)
 
-//     return captains;
-// };
+    return captains;
+};
 
 export {
     getAddressCoordinate,
     getDistanceTime,
     getAutoCompleteSuggestions,
-    // getCaptainsInTheRadius
+    getCaptainsInTheRadius
 };
 
