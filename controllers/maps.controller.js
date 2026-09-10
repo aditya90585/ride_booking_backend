@@ -1,5 +1,5 @@
 import { validationResult } from "express-validator";
-import { getAddressCoordinate, getAutoCompleteSuggestions, getDistanceTime } from "../services/maps.service.js";
+import { getAddressCoordinate, getAddressFromCoordinates, getAutoCompleteSuggestions, getDistanceTime,getRoute } from "../services/maps.service.js";
 
 const getCoordinates = async (req, res) => {
     try {
@@ -72,4 +72,31 @@ const getAutoCompleteSuggestionsController = async (req, res) => {
 
     }
 }
-export { getCoordinates, getDistanceTimeController, getAutoCompleteSuggestionsController }
+
+
+ const getAddressFromCoordinatesController = async (req, res) => {
+    try {
+        const { lat, lng } = req.query;
+
+        const address = await getAddressFromCoordinates(lat, lng);
+
+        res.status(200).json({ address });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Unable to get address" });
+    }
+};
+
+const getRouteController = async (req, res) => {
+    try {
+        const { origin,destination } = req.query;
+ console.log(origin,destination)
+        const route = await getRoute(origin,destination);
+        res.status(200).json({ route });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Unable to get route" });
+    }
+};
+
+export { getCoordinates, getDistanceTimeController, getAutoCompleteSuggestionsController,getAddressFromCoordinatesController, getRouteController }

@@ -21,16 +21,20 @@ export const initializeSocket = (server) => {
             }
         })
         socket.on("update-location-captain", async (data) => {
-            const { userId, location } = data
-            if (!userId || !location.ltd || !location.lng) {
+            const { captainId, userSocketId, location } = data
+            if (!captainId || !location.ltd || !location.lng) {
                 return socket.emit("error", { message: "Invalid location or user" })
             }
-            await Captain.findOneAndUpdate({ _id: userId }, {
+            await Captain.findOneAndUpdate({ _id: captainId }, {
                 location: {
                     type: "Point",
                     coordinates: [location.lng, location.ltd]
                 }
             })
+
+            if (!userSocketId) return
+            socket.to(userSocketId).emit("captain-live-location", { ltd: location.ltd, lng: location.lng, heading: location.heading })
+
         })
         socket.on("disconnect", () => {
             console.log(`Client disconnected: ${socket.id}`);

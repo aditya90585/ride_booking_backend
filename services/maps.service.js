@@ -8,8 +8,10 @@ const GEOAPIFY_API_KEY = process.env.GEOAPIFY_API_KEY;
 const GEOCODING_URL = "https://api.geoapify.com/v1/geocode/search";
 const AUTOCOMPLETE_URL = "https://api.geoapify.com/v1/geocode/autocomplete";
 const ROUTING_URL = "https://api.geoapify.com/v1/routing";
+const REVERSE_GEOCODING_URL = "https://api.geoapify.com/v1/geocode/reverse";
 
 const getAddressCoordinate = async (address) => {
+    console.log(address)
     if (!address) throw new Error("Address is required");
     if (!GEOAPIFY_API_KEY) throw new Error("GEOAPIFY_API_KEY is not configured");
 
@@ -127,7 +129,6 @@ const getAutoCompleteSuggestions = async (input) => {
 };
 
 const getCaptainsInTheRadius = async (ltd, lng, radius) => {
-    console.log(ltd, lng, radius)
     const captains = await Captain.find({
         location: {
             $geoWithin: {
@@ -135,15 +136,83 @@ const getCaptainsInTheRadius = async (ltd, lng, radius) => {
             }
         }
     });
-    console.log(captains)
 
     return captains;
 };
+const getAddressFromCoordinates = async (lat, lng) => {
+    if (!lat || !lng) throw new Error("Coordinates are required");
+    if (!GEOAPIFY_API_KEY) throw new Error("GEOAPIFY_API_KEY is not configured");
+
+    try {
+        const response = await axios.get(REVERSE_GEOCODING_URL, {
+            params: {
+                lat,
+                lon: lng,
+                apiKey: GEOAPIFY_API_KEY
+            }
+        });
+
+        if (!response.data?.features?.length) {
+            throw new Error("Unable to find address");
+        }
+
+        return response.data.features[0].properties.formatted;
+    } catch (error) {
+        console.error(
+            "Geoapify Reverse Geocoding Error:",
+            error.response?.data || error.message
+        );
+        throw new Error("Unable to find address");
+    }
+};
+const getRoute = async (origin, destination) => {
+
+    if (!origin || !destination) {
+        throw new Error("Origin and destination are required");
+    }
+
+    if (!GEOAPIFY_API_KEY) {
+        throw new Error("GEOAPIFY_API_KEY is not configured");
+    }
+
+    try {
+        const originCoordinates = await getAddressCoordinate(origin);
+        const destinationCoordinates = await getAddressCoordinate(destination);
+
+        const waypoints =
+            `${originCoordinates.ltd},${originCoordinates.lng}|` +
+            `${destinationCoordinates.ltd},${destinationCoordinates.lng}`;
+
+
+        const response = await axios.get(
+            "https://api.geoapify.com/v1/routing",
+            {
+                params: {
+                    waypoints,
+                    mode: "drive",
+                    format: "geojson",
+                    apiKey: GEOAPIFY_API_KEY
+                }
+            }
+        )
+
+        return response.data;
+    } catch (error) {
+        console.error(
+            "Geoapify Routing Error:",
+            error.response?.data || error.message
+        );
+        throw new Error(error.message || "Unable to fetch route");
+    }
+}
+
 
 export {
     getAddressCoordinate,
     getDistanceTime,
     getAutoCompleteSuggestions,
-    getCaptainsInTheRadius
+    getCaptainsInTheRadius,
+    getAddressFromCoordinates,
+    getRoute
 };
 
