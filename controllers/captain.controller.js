@@ -9,13 +9,18 @@ const registerCaptain = async (req, res) => {
         if (!errors.isEmpty()) {
             return res.status(400).json({ success: false, message: "Validation failed", errors: errors.array() });
         }
-   
+
         const { firstName, lastName, email, password, color, plate, capacity, vehicleType } = req.body;
         const captain = await createCaptain({ firstName, lastName, email, password, color, plate, capacity, vehicleType });
 
         const token = await captain.generateToken()
 
-        res.status(201).json({ success: true, captain, token });
+        res.status(201).cookie("token", token, {
+            httpOnly: true,
+            secure: true,
+            maxAge: 24 * 60 * 60 * 1000,// 1 day
+            sameSite: "none",
+        }).json({ success: true, captain, token });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
     }
@@ -49,7 +54,8 @@ const loginCaptain = async (req, res) => {
         res.status(200).cookie("token", token, {
             httpOnly: true,
             secure: true,
-            maxAge: 24 * 60 * 60 * 1000 // 1 day
+            maxAge: 24 * 60 * 60 * 1000,// 1 day
+            sameSite: "none",
         }).json({
             success: true,
             captain,
@@ -85,7 +91,7 @@ const getCaptainProfile = async (req, res) => {
 
 const logoutCaptain = async (req, res) => {
     try {
-        const token  = req.cookies.token || req.headers.authorization?.split(" ")[1];
+        const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
 
         if (!token) {
             return res.status(401).json({
@@ -112,4 +118,4 @@ const logoutCaptain = async (req, res) => {
     }
 };
 
-export { registerCaptain,loginCaptain,getCaptainProfile,logoutCaptain };
+export { registerCaptain, loginCaptain, getCaptainProfile, logoutCaptain };

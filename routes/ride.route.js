@@ -6,7 +6,7 @@ import { authMiddleware, captainAuthMiddleware } from "../middleware/auth.midlew
 const router = express.Router();
 
 router.post("/create", createRideValidation, authMiddleware, createRideController);
-router.get("/get-fare", authMiddleware, calculateFare)
+router.get("/get-fare", calculateFare)
 router.post("/confirm-ride", captainAuthMiddleware, confirmRideController)
 router.post("/start-ride", captainAuthMiddleware, startRideController)
 router.post("/end-ride", captainAuthMiddleware, endRideController)
