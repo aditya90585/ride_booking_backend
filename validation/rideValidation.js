@@ -15,5 +15,8 @@ export const createRideValidation = [
         .notEmpty()
         .withMessage("Vehicle type is required")
         .isIn(["auto", "car", "moto"])
-        .withMessage("Vehicle type must be one of the following: auto, car, moto")
+        .withMessage("Vehicle type must be one of the following: auto, car, moto"),
+    body("paymentMethod")
+        .isIn(["cash", "online"])
+        .withMessage("Invalid payment method")
 ]

@@ -47,8 +47,8 @@ const getOtp = (num) => {
 }
 
 
-const createRide = async ({ userId, pickupLocation, destination, vehicleType }) => {
-    if (!userId || !pickupLocation || !destination || !vehicleType) {
+const createRide = async ({ userId, pickupLocation, destination, vehicleType, paymentMethod }) => {
+    if (!userId || !pickupLocation || !destination || !vehicleType || !paymentMethod) {
         throw new Error("All fields are required to create a ride");
     }
     const fare = await getFare(pickupLocation, destination)
@@ -57,7 +57,8 @@ const createRide = async ({ userId, pickupLocation, destination, vehicleType }) 
         pickupLocation,
         destination,
         otp: getOtp(4),
-        fare: fare[vehicleType]
+        fare: fare[vehicleType],
+        paymentMethod
     })
     return ride
 }
@@ -66,11 +67,13 @@ const confirmRide = async ({ rideId, captain }) => {
     if (!rideId) {
         throw new Error("rideId is required")
     }
-    await Ride.findOneAndUpdate({ _id: rideId }, {
+    const ride = await Ride.findOneAndUpdate({ _id: rideId }, {
         status: "accepted",
         captain: captain._id
-    })
-    const ride = await Ride.findOne({ _id: rideId }).populate("user").populate("captain").select("+otp")
+    }, {
+        new: true
+    }).populate("user").populate("captain").select("+otp")
+
     if (!ride) {
         throw new Error("ride not found")
     }
@@ -82,31 +85,50 @@ const startRide = async ({ rideId, otp, captain }) => {
     if (!rideId || !otp) {
         throw new Error("rideId and otp are required")
     }
-    const ride = await Ride.findOne({ _id: rideId, otp: otp, status: "accepted", captain: captain._id }).populate("user").populate("captain")
+
+    const ride = await Ride.findOneAndUpdate({ _id: rideId, otp: otp, status: "accepted", captain: captain._id },
+        {
+            status: "ongoing"
+        },
+        {
+            new: true
+        }).populate("user").populate("captain")
+        console.log(ride)
+
     if (!ride) {
         throw new Error("Invalid rideId or otp or ride is not accepted yet")
     }
-
-    await Ride.findOneAndUpdate({ _id: rideId }, {
-        status: "ongoing"
-    })
     return ride
 }
 
 const endRide = async ({ rideId, captain }) => {
     if (!rideId) {
-        throw new Error("rideId is required")
-    }
-    const ride = await Ride.findOne({ _id: rideId, status: "ongoing", captain: captain._id }).populate("user").populate("captain")
-    
-    if (!ride) {
-        throw new Error("Invalid rideId or ride is not ongoing yet")
+        throw new Error("rideId is required");
     }
 
-    await Ride.findOneAndUpdate({ _id: rideId }, {
-        status: "completed"
-    })
-    return ride
+    const ride = await Ride.findOneAndUpdate(
+        {
+            _id: rideId,
+            status: "ongoing",
+            captain: captain._id
+        },
+        {
+            status: "completed"
+        },
+        {
+            new: true
+        }
+    )
+        .populate("user")
+        .populate("captain");
+
+    if (!ride) {
+        throw new Error(
+            "Invalid rideId or ride is not ongoing yet"
+        );
+    }
+
+    return ride;
 }
 
 export { getFare, createRide, confirmRide, startRide, endRide };

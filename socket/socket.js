@@ -1,6 +1,7 @@
 import { Server } from "socket.io"
 import User from "../models/user.model.js"
 import Captain from "../models/captain.model.js"
+import Ride from "../models/ride.model.js"
 let io
 export const initializeSocket = (server) => {
     io = new Server(server, {
@@ -21,7 +22,7 @@ export const initializeSocket = (server) => {
             }
         })
         socket.on("update-location-captain", async (data) => {
-            const { captainId, userSocketId, location } = data
+            const { captainId, rideId, location } = data
             if (!captainId || !location.ltd || !location.lng) {
                 return socket.emit("error", { message: "Invalid location or user" })
             }
@@ -32,8 +33,16 @@ export const initializeSocket = (server) => {
                 }
             })
 
-            if (!userSocketId) return
-            socket.to(userSocketId).emit("captain-live-location", { ltd: location.ltd, lng: location.lng, heading: location.heading })
+            if (!rideId) {
+                return socket.emit("error", { message: "Invalid ride id" })
+            }
+            const ride = await Ride.findOne({ _id: rideId }).populate("user")
+            if (!ride) {
+                return socket.emit("error", { message: "Ride not found" })
+            }
+            const userSocketId = ride?.user?.socketId
+
+            io.to(userSocketId).emit("captain-live-location", { ltd: location.ltd, lng: location.lng, heading: location.heading })
 
         })
         socket.on("disconnect", () => {

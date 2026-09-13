@@ -10,17 +10,17 @@ const createRideController = async (req, res) => {
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
-        const { pickupLocation, destination, vehicleType } = req.body;
+        const { pickupLocation, destination, vehicleType, paymentMethod } = req.body;
         const userId = req.user.id;
-        if (!pickupLocation || !destination || !vehicleType) {
+        if (!pickupLocation || !destination || !vehicleType || !paymentMethod) {
             return res.status(400).json({ success: false, message: "All fields are required" });
         }
-        const ride = await createRide({ userId, pickupLocation, destination, vehicleType });
+        const ride = await createRide({ userId, pickupLocation, destination, vehicleType,paymentMethod });
         res.status(201).json({ success: true, ride });
 
         const pickUpCoordinates = await getAddressCoordinate(pickupLocation)
 
-        const captainsInRadius = await getCaptainsInTheRadius(pickUpCoordinates?.ltd, pickUpCoordinates?.lng, 90)
+        const captainsInRadius = await getCaptainsInTheRadius(pickUpCoordinates?.ltd, pickUpCoordinates?.lng, 20)
 
         const rideWithUser = await Ride.findOne({ _id: ride._id }).populate('user').select("-otp");
 

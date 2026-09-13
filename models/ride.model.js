@@ -33,16 +33,17 @@ const rideSchema = new mongoose.Schema({
     distance: {
         type: Number
     },
-    paymentId: {
-        type: String
-    },
-    orderId: {
-        type: String
-    },
-    signature: {
+    paymentStatus: {
         type: String,
+        enum: ["pending", "paid", "failed", "refunded"],
+        default: "pending"
     },
 
+    paymentMethod: {
+        type: String,
+        enum: ["cash", "online"],
+        default: "cash"
+    },
     otp: {
         type: String,
         select: false,
